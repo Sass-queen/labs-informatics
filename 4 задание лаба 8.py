@@ -13,4 +13,3 @@ with open('output.txt', 'w', encoding='utf-8') as file:
     file.write(f'Количество знаков препинания: {punctuation_count}\n')
     file.write(f'Сложность предложения: {complexity}\n')
 
-print("Сложность предложения определена и записана в output.txt.")
