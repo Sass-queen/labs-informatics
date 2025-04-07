@@ -7,7 +7,7 @@ from matplotlib.widgets import Slider
 def generate_circle_data(center, radius, n_points):
     points = []
     for j in range(n_points):
-        corner = np.random.uniform(0, 2 * np.pi)
+        angle = np.random.uniform(0, 2 * np.pi)
         r = radius * np.sqrt(np.random.uniform(0, 1))
         x = center[0] + r * np.cos(angle)
         y = center[1] + r * np.sin(angle)
