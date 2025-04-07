@@ -9,8 +9,8 @@ def generate_circle_data(center, radius, n_points):
     for j in range(n_points):
         corner = np.random.uniform(0, 2 * np.pi)
         r = radius * np.sqrt(np.random.uniform(0, 1))
-        x = center[0] + r * np.cos(corner)
-        y = center[1] + r * np.sin(corner)
+        x = center[0] + r * np.cos(angle)
+        y = center[1] + r * np.sin(angle)
         points.append([x, y])
     return np.array(points)
 
