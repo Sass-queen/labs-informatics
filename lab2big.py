@@ -22,7 +22,7 @@ cluster3 = generate_circle_data([9, 7], 1.1, 35)
 X = np.vstack([cluster1, cluster2, cluster3])
 
 
-# 2. Реализация K-means
+#  Реализация K-means
 def k_means(X, k=3, max_iter=100):
     # Создаём случайные центроиды
     centroids = X[np.random.choice(X.shape[0], k, replace=False)]
@@ -48,7 +48,7 @@ def k_means(X, k=3, max_iter=100):
 
 
 history = k_means(X, k=3)
-# 3. Визуализация со слайдером
+# Визуализация со слайдером
 fig, ax = plt.subplots(figsize=(12, 8))
 plt.subplots_adjust(bottom=0.25)
 # Нач состояние
