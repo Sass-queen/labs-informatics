@@ -1,136 +1,112 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 import random
-from math import sqrt
-from collections import Counter
 
 
-# 1. Генерация исходных данных
-def generate_data(points_count1=50, points_count2=50):
-    # Границы для первого класса
-    xMin1, xMax1 = 1, 3
-    yMin1, yMax1 = 1, 3
-
-    # Границы для второго класса
-    xMin2, xMax2 = 3, 5
-    yMin2, yMax2 = 3, 5
-
-    # Генерация точек для первого класса
-    class1 = [
-        [random.uniform(xMin1, xMax1), random.uniform(yMin1, yMax1)]
-        for _ in range(points_count1)
-    ]
-
-    # Генерация точек для второго класса
-    class2 = [
-        [random.uniform(xMin2, xMax2), random.uniform(yMin2, yMax2)]
-        for _ in range(points_count2)
-    ]
-
-    # Объединение данных
-    x = class1 + class2
-    y = [0] * points_count1 + [1] * points_count2
-
-    return x, y
+# 1. Исходная показательная функция y = a*b^x + c
+def true_function(x, a, b, c):
+    return a * (b ** x) + c
 
 
-# 2. Разделение на обучающую и тестовую выборки
-def train_test_split(x, y, p=0.8):
-    data = list(zip(x, y))
-    random.shuffle(data)
-    split_idx = int(len(data) * p)
+# 2. Генерация данных с шумом
+x_min = 0
+x_max = 5
+points = 20
+noise_scale = 0.5
 
-    train_data = data[:split_idx]
-    test_data = data[split_idx:]
+# Истинные параметры
+true_a = 1.5
+true_b = 2.0
+true_c = 0.5
 
-    x_train = [point for point, label in train_data]
-    y_train = [label for point, label in train_data]
-    x_test = [point for point, label in test_data]
-    y_test = [label for point, label in test_data]
-
-    return x_train, x_test, y_train, y_test
-
-
-# 3. Реализация KNN
-def euclidean_distance(point1, point2):
-    return sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+x = np.linspace(x_min, x_max, points)
+y = true_function(x, true_a, true_b, true_c) + np.array(
+    [random.uniform(-noise_scale, noise_scale) for _ in range(points)])
 
 
-def fit(x_train, y_train, x_test, k=3):
-    y_predict = []
-    for test_point in x_test:
-        # Вычисление расстояний до всех точек обучающей выборки
-        distances = [
-            (euclidean_distance(test_point, train_point), label)
-            for train_point, label in zip(x_train, y_train)
-        ]
-        # Сортировка по расстоянию и выбор k ближайших
-        k_nearest = sorted(distances)[:k]
-        k_nearest_labels = [label for _, label in k_nearest]
-        # Голосование большинством
-        most_common = Counter(k_nearest_labels).most_common(1)
-        y_predict.append(most_common[0][0])
-    return y_predict
+# 3. Функции для вычисления градиентов
+def get_da(x, y, a, b, c):
+    return (2 / len(x)) * np.sum((a * (b ** x) + c - y) * (b ** x))
 
 
-# 4. Метрика accuracy
-def compute_accuracy(y_test, y_predict):
-    correct = sum(1 for true, pred in zip(y_test, y_predict) if true == pred)
-    return correct / len(y_test)
+def get_db(x, y, a, b, c):
+    return (2 / len(x)) * np.sum((a * (b ** x) + c - y) * (a * x * (b ** (x - 1))))
 
 
-# 5. Визуализация
-def plot_results(x_train, y_train, x_test, y_test, y_predict):
-    plt.figure(figsize=(12, 5))
-
-    # Обучающие данные
-    plt.subplot(1, 2, 1)
-    class0_train = [point for point, label in zip(x_train, y_train) if label == 0]
-    class1_train = [point for point, label in zip(x_train, y_train) if label == 1]
-
-    plt.scatter([p[0] for p in class0_train], [p[1] for p in class0_train],
-                color='blue', label='Class 0 (train)')
-    plt.scatter([p[0] for p in class1_train], [p[1] for p in class1_train],
-                color='red', label='Class 1 (train)')
-    plt.title('Training Data')
-    plt.legend()
-
-    # Тестовые данные с предсказаниями
-    plt.subplot(1, 2, 2)
-    class0_test = [point for point, label in zip(x_test, y_test) if label == 0]
-    class1_test = [point for point, label in zip(x_test, y_test) if label == 1]
-    class0_pred = [point for point, label in zip(x_test, y_predict) if label == 0]
-    class1_pred = [point for point, label in zip(x_test, y_predict) if label == 1]
-
-    plt.scatter([p[0] for p in class0_test], [p[1] for p in class0_test],
-                color='blue', marker='o', label='Class 0 (true)')
-    plt.scatter([p[0] for p in class1_test], [p[1] for p in class1_test],
-                color='red', marker='o', label='Class 1 (true)')
-    plt.scatter([p[0] for p in class0_pred], [p[1] for p in class0_pred],
-                color='cyan', marker='x', s=100, label='Class 0 (pred)')
-    plt.scatter([p[0] for p in class1_pred], [p[1] for p in class1_pred],
-                color='orange', marker='x', s=100, label='Class 1 (pred)')
-    plt.title('Test Data with Predictions')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+def get_dc(x, y, a, b, c):
+    return (2 / len(x)) * np.sum(a * (b ** x) + c - y)
 
 
-# Основная программа
-if __name__ == "__main__":
-    # Генерация данных
-    x, y = generate_data()
+# 4. Реализация градиентного спуска
+def fit(x, y, speed, epochs, a0, b0, c0):
+    a = a0
+    b = b0
+    c = c0
+    history = {'a': [a], 'b': [b], 'c': [c], 'mse': [np.mean((y - true_function(x, a, b, c)) ** 2)]}
 
-    # Разделение на train/test
-    x_train, x_test, y_train, y_test = train_test_split(x, y)
+    for _ in range(epochs):
+        da = get_da(x, y, a, b, c)
+        db = get_db(x, y, a, b, c)
+        dc = get_dc(x, y, a, b, c)
 
-    # Обучение и предсказание
-    y_predict = fit(x_train, y_train, x_test, k=3)
+        a -= speed * da
+        b = max(0.1, b - speed * db)  # Ограничение b > 0
+        c -= speed * dc
 
-    # Оценка точности
-    accuracy = compute_accuracy(y_test, y_predict)
-    print(f"Accuracy: {accuracy:.2f}")
+        history['a'].append(a)
+        history['b'].append(b)
+        history['c'].append(c)
+        history['mse'].append(np.mean((y - true_function(x, a, b, c)) ** 2))
 
-    # Визуализация
-    plot_results(x_train, y_train, x_test, y_test, y_predict)
+    return history
+
+
+# 5. Параметры обучения
+learning_rate = 0.001
+epochs = 500
+initial_a = random.uniform(0.5, 3)
+initial_b = random.uniform(1, 3)
+initial_c = random.uniform(-1, 1)
+
+# Обучаем модель
+history = fit(x, y, learning_rate, epochs, initial_a, initial_b, initial_c)
+
+# 6. Визуализация с одним графиком
+fig, ax = plt.subplots(figsize=(10, 6))
+plt.subplots_adjust(bottom=0.25)
+
+# График данных и кривой регрессии
+scatter = ax.scatter(x, y, color='red', label='Исходные данные')
+curve, = ax.plot(x, true_function(x, history['a'][0], history['b'][0], history['c'][0]),
+                 'b-', label='Регрессия', linewidth=2)
+ax.set_xlim(x_min, x_max)
+ax.set_ylim(min(y) - 1, max(y) + 1)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_title(f'Показательная регрессия (a={history["a"][0]:.2f}, b={history["b"][0]:.2f}, c={history["c"][0]:.2f})')
+ax.legend()
+ax.grid(True)
+
+# Ползунок для выбора эпохи
+ax_slider = plt.axes([0.25, 0.1, 0.5, 0.03])
+slider = Slider(ax_slider, 'Эпоха', 0, epochs, valinit=0, valstep=1)
+
+
+# Функция обновления графика
+def update(val):
+    epoch = int(slider.val)
+    current_a = history['a'][epoch]
+    current_b = history['b'][epoch]
+    current_c = history['c'][epoch]
+    current_mse = history['mse'][epoch]
+
+    curve.set_ydata(true_function(x, current_a, current_b, current_c))
+    ax.set_title(
+        f'Показательная регрессия (a={current_a:.2f}, b={current_b:.2f}, c={current_c:.2f})\nMSE: {current_mse:.4f}')
+    fig.canvas.draw_idle()
+
+
+slider.on_changed(update)
+
+plt.show()
